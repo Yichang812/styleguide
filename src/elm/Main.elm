@@ -1,22 +1,25 @@
-port module Main exposing (Model, Msg(..), init, main, update, view)
+module Main exposing (Model, Msg(..), init, main, update, view)
 
 -- import CodeMirror exposing (..)
 
 import AppState exposing (AppState(..))
 import Browser
-import CodeEditor exposing (codeEditor, editorValue, onEditorChanged)
+import Browser.Navigation as Nav exposing (Key)
+import CodeEditor exposing (playground)
 import Dict exposing (Dict)
-import Html exposing (Attribute, Html, a, code, div, h1, input, li, pre, section, text, textarea, ul)
-import Html.Attributes exposing (attribute, class, id, placeholder, type_)
+import Html exposing (Attribute, Html, a, code, div, input, li, pre, section, text, textarea, ul)
+import Html.Attributes exposing (attribute, class, href, id, placeholder, type_)
 import Html.Events exposing (on, onClick, onInput, stopPropagationOn, targetValue)
 import Http
 import Json.Decode as Decode exposing (Decoder, dict, list, string)
-import Json.Decode.Pipeline exposing (hardcoded, required, resolve)
-import Json.Encode as Encode exposing (string)
+import Json.Decode.Pipeline exposing (required)
 import Markdown exposing (toHtml)
 import Markdown.Block as Block exposing (Block, CodeBlock, defaultHtml)
 import Markdown.Config exposing (HtmlOption(..), Options)
+import Port exposing (highlight, onUrlChange, setPreview)
+import Route exposing (Route(..), buildPath)
 import UI exposing (loading)
+import Url exposing (Url, fromString)
 import Url.Builder as Builder
 
 
@@ -27,11 +30,13 @@ import Url.Builder as Builder
 
 type alias Model =
     { code : String
-    , activeDocContent : Maybe String
-    , activeDocName : Maybe String
-    , docList : Dict String (List File)
-    , shownDocList : Dict String (List File)
+    , activeFileContent : Maybe String
+    , activeFileName : Maybe String
+    , fileList : Dict String (List File)
+    , shownFileList : Dict String (List File)
     , appState : AppState Http.Error
+    , url : Url
+    , key : Key
     }
 
 
@@ -45,47 +50,46 @@ type alias File =
 ---- VIEW ----
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
     let
         { appState } =
             model
+
+        body =
+            case appState of
+                InitLoading ->
+                    div [] [ UI.loading ]
+
+                Loaded maybeError ->
+                    div []
+                        [ case maybeError of
+                            Just error ->
+                                text <| "Error: " ++ Debug.toString error
+
+                            Nothing ->
+                                text ""
+                        , viewContainer model
+                        ]
+
+                Loading ->
+                    div [] [ UI.loading ]
+
+                LoadingError error ->
+                    div [] [ text <| Debug.toString error ]
     in
-    case appState of
-        InitLoading ->
-            div [] [ UI.loading ]
-
-        Loaded maybeError ->
-            div []
-                [ case maybeError of
-                    Just error ->
-                        text <| "Error: " ++ Debug.toString error
-
-                    Nothing ->
-                        text ""
-                , viewContainer model
-                ]
-
-        Loading ->
-            div [] [ UI.loading ]
-
-        LoadingError error ->
-            div [] [ text <| Debug.toString error ]
+    { title = "Styleguide"
+    , body = [ body ]
+    }
 
 
 viewContainer : Model -> Html Msg
 viewContainer model =
     div [ class "grid-container" ]
-        [ navBar
+        [ UI.navBar
         , sideMenu model
         , mainContent model
         ]
-
-
-navBar : Html msg
-navBar =
-    div [ class "navbar" ]
-        [ h1 [] [ text "Zalora Styleguide" ] ]
 
 
 sideMenu : Model -> Html Msg
@@ -99,7 +103,7 @@ sideMenu model =
 
 sideMenuList : Model -> Html Msg
 sideMenuList model =
-    ul [] <| List.map (\s -> categoryList s (.activeDocName model)) (Dict.toList <| .shownDocList model)
+    ul [] <| List.map (\s -> categoryList s (.activeFileName model)) (Dict.toList <| .shownFileList model)
 
 
 categoryList : ( String, List File ) -> Maybe String -> Html Msg
@@ -126,40 +130,20 @@ categoryItem file isActive =
             else
                 "sidebar__filename"
     in
-    li [ onClick (SelectFile file), class className, attribute "data-path" <| .path file ] [ text <| .name file ]
+    li [] [ a [ href <| .path file, class className, attribute "data-path" <| .path file ] [ text <| .name file ] ]
 
 
 mainContent : Model -> Html Msg
 mainContent model =
     div [ class "main" ] <|
-        case .activeDocContent model of
+        case .activeFileContent model of
             Just value ->
                 [ article value
-                , playground <| .code model
+                , CodeEditor.playground (.code model) CodeChanged
                 ]
 
             Nothing ->
                 [ text "Welcome to our new styleguide!" ]
-
-
-playground : String -> Html Msg
-playground code =
-    section [ class "playground" ]
-        [ h1 [] [ text "Playground" ]
-        , div [ class "playground__wrapper" ]
-            [ div
-                [ id "playground__preview"
-                , class "playground__preview"
-                , attribute "data-html" code
-                ]
-                []
-            , codeEditor
-                [ class "playground__editor"
-                , CodeEditor.editorValue code
-                , CodeEditor.onEditorChanged CodeChanged
-                ]
-            ]
-        ]
 
 
 article : String -> Html msg
@@ -204,43 +188,53 @@ article doc =
 
 type Msg
     = InitView (Result Http.Error (Dict String (List File)))
-    | SelectFile File
+      -- | SelectFile File
     | FileLoaded (Result Http.Error String)
     | CodeChanged String
     | SearchArticle String
+    | UrlChanged Url
+    | LinkClicked Browser.UrlRequest
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        { appState, docList } =
+        { appState, fileList, url } =
             model
     in
     case msg of
         InitView data ->
             case data of
                 Ok value ->
-                    ( { model | docList = value, shownDocList = value, appState = AppState.toSuccess appState }, Cmd.none )
+                    ( { model | fileList = value, shownFileList = value, appState = AppState.toSuccess appState }, Cmd.none )
 
                 Err error ->
                     ( { model | appState = AppState.toFailure error appState }, Cmd.none )
 
         FileLoaded data ->
             case data of
-                Ok doc ->
-                    ( { model | activeDocContent = Just doc, shownDocList = docList, appState = AppState.toSuccess appState }, highlight "test" )
+                Ok file ->
+                    ( { model | activeFileContent = Just file, shownFileList = fileList, appState = AppState.toSuccess appState }, highlight "test" )
 
                 Err error ->
-                    ( { model | activeDocContent = Just "Fail to load content", appState = AppState.toFailure error appState }, Cmd.none )
-
-        SelectFile file ->
-            ( { model | activeDocName = Just (.name file), appState = AppState.toLoading appState }, loadFile file )
+                    ( { model | activeFileContent = Just "Fail to load content", appState = AppState.toFailure error appState }, Cmd.none )
 
         CodeChanged code ->
             ( { model | code = code }, setPreview code )
 
         SearchArticle input ->
-            ( { model | shownDocList = filterCategoriesAndFiles input docList }, Cmd.none )
+            ( { model | shownFileList = filterCategoriesAndFiles input fileList }, Cmd.none )
+
+        UrlChanged newUrl ->
+            ( { model | url = newUrl }, loadFile url )
+
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal requestUrl ->
+                    ( model, Nav.pushUrl model.key (Url.toString requestUrl) )
+
+                Browser.External href ->
+                    ( model, Nav.load href )
 
 
 subscriptions : Model -> Sub Msg
@@ -252,8 +246,8 @@ subscriptions _ =
 ---- INIT ----
 
 
-init : ( Model, Cmd Msg )
-init =
+init : () -> Url -> Key -> ( Model, Cmd Msg )
+init flags url key =
     let
         fileDecoder : Decoder File
         fileDecoder =
@@ -267,28 +261,30 @@ init =
                 |> Http.send InitView
     in
     ( { code = "<!-- try to write some html code here -->"
-      , activeDocContent = Nothing
-      , activeDocName = Nothing
-      , docList = Dict.fromList []
-      , shownDocList = Dict.fromList []
+      , activeFileContent = Nothing
+      , activeFileName = Nothing
+      , fileList = Dict.fromList []
+      , shownFileList = Dict.fromList []
       , appState = AppState.init
+      , url = url
+      , key = key
       }
     , cmd
     )
 
 
-loadFile : File -> Cmd Msg
-loadFile file =
-    let
-        url =
-            Builder.relative [ .path file ] []
-    in
-    Http.getString url
-        |> Http.send FileLoaded
+loadFile : Url -> Cmd Msg
+loadFile url =
+    if .path url /= "" then
+        Http.getString (Url.toString url)
+            |> Http.send FileLoaded
+
+    else
+        Cmd.none
 
 
 filterCategoriesAndFiles : String -> Dict String (List File) -> Dict String (List File)
-filterCategoriesAndFiles keyword docList =
+filterCategoriesAndFiles keyword fileList =
     let
         map : String -> ( String, List File ) -> ( String, List File )
         map input categoryFileMap =
@@ -298,11 +294,11 @@ filterCategoriesAndFiles keyword docList =
             else
                 Tuple.mapSecond (filterFile input) categoryFileMap
 
-        filterFile input fileList =
-            fileList
+        filterFile input list =
+            list
                 |> List.filter (\f -> String.contains (String.toLower input) (String.toLower <| .name f))
     in
-    Dict.toList docList
+    Dict.toList fileList
         |> List.map (\list -> map keyword list)
         |> List.filter (\list -> List.length (Tuple.second list) /= 0)
         |> Dict.fromList
@@ -312,21 +308,13 @@ filterCategoriesAndFiles keyword docList =
 ---- PROGRAM ----
 
 
-main : Program {} Model Msg
+main : Program () Model Msg
 main =
-    Browser.element
-        { init = \_ -> init
+    Browser.application
+        { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
         }
-
-
-
----- PORT -----
-
-
-port highlight : String -> Cmd msg
-
-
-port setPreview : String -> Cmd msg
