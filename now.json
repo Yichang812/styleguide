@@ -7,10 +7,7 @@
     },
     "files": [
       "index.html",
-      "src",
-      "_template",
-      "webpack.config.js",
-      "package-lock.json",
+      "public",
       "pages",
       "img"
     ]
