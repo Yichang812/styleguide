@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "name": "styleguide",
+    "alias": "styleguide.now.sh",
+    "engines": {
+      "node": "8"
+    },
+    "files": [
+      "index.html",
+      "src",
+      "_template",
+      "webpack.config.js",
+      "package-lock.json",
+      "pages",
+      "img"
+    ]
+  }
