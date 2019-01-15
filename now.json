@@ -1,14 +1,4 @@
 {
-    "version": 1,
     "name": "styleguide",
-    "alias": "styleguide.now.sh",
-    "engines": {
-      "node": "8"
-    },
-    "files": [
-      "index.html",
-      "public",
-      "pages",
-      "img"
-    ]
-  }
+    "alias": "zalora-styleguide.now.sh"
+}
