@@ -1,13 +1,13 @@
-import './main.css';
 import { Elm } from './elm/Main.elm';
 import CodeMirror from 'codemirror';
-import CodeMirrorStyle from 'codemirror/lib/codemirror.css';
-import CodeMirrorTheme from 'codemirror/theme/zenburn.css';
-import CodeMirrorMode from 'codemirror/mode/htmlmixed/htmlmixed';
+import 'codemirror/lib/codemirror.css';
+import 'codemirror/theme/zenburn.css';
+import 'codemirror/mode/htmlmixed/htmlmixed';
 import hljs from 'highlight.js/lib/highlight';
 import xml from 'highlight.js/lib/languages/xml';
 import 'highlight.js/styles/zenburn.css';
 import '@zalora/style/dist/style.min.css';
+import './main.css';
 
 
 const node = document.getElementById('root');
@@ -31,8 +31,6 @@ customElements.define('code-snippet', class extends HTMLElement {
     }
 
     connectedCallback() {
-        console.log(this._innerCode);
-
         this.innerText = this._innerCode;
         hljs.registerLanguage('xml', xml);
         hljs.highlightBlock(this);

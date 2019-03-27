@@ -5,13 +5,13 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack --mode production",
-    "start": "webpack-dev-server --port 9000 --hot --inline --open"
+    "start": "webpack-dev-server"
   },
   "author": "Yichang Li",
   "devDependencies": {
     "@babel/core": "^7.1.2",
     "@babel/preset-env": "^7.1.0",
-    "@zalora/style": "1.1.0",
+    "@zalora/style": "^1.4.0",
     "codemirror": "^5.40.2",
     "css-loader": "^1.0.0",
     "elm-hot-webpack-loader": "^1.0.2",
@@ -25,6 +25,6 @@
     "raw-loader": "^0.5.1",
     "webpack": "^4.20.2",
     "webpack-cli": "^3.1.2",
-    "webpack-dev-server": "^3.1.14"
+    "webpack-dev-server": "^3.2.1"
   }
 }

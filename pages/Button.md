@@ -14,3 +14,7 @@ Just some random text here for tesing
 ```html
 <a href="#" class="btn--link">Link</a>
 ```
+
+## Image
+
+![alt text](./img/example.png "Logo Title Text 1")

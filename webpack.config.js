@@ -5,7 +5,6 @@ const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-    mode: 'development',
     entry: {
         index: [
             './src/index.js'
@@ -15,8 +14,6 @@ module.exports = {
         path: path.resolve(__dirname, 'public'),
         filename: '[name].js',
         publicPath: '/',
-        hotUpdateChunkFilename: '.hot/[id].[hash].hot-update.js',
-        hotUpdateMainFilename: '.hot/[hash].hot-update.json'
     },
     module: {
         noParse: /\.elm$/,
@@ -42,8 +39,7 @@ module.exports = {
                         loader: 'elm-webpack-loader',
                         options: {
                             cwd: __dirname,
-                            debug:
-                                process.env.ELM_DEBUGGER === 'false' ? false : true
+                            debug: true
                         }
                     }
                 ]
@@ -58,8 +54,14 @@ module.exports = {
         new MiniCssExtractPlugin({
             filename: '[name].css',
             chunkFilename: '[id].css'
-        })
+        }),
+        new webpack.HotModuleReplacementPlugin(),
     ],
+    devServer: {
+        contentBase: path.join(__dirname, '/'),
+        hot: true,
+        port: 9001
+    },
 
 
 };
