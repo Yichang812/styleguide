@@ -6,6 +6,7 @@ Color utility classes allow you to determine the background, border, or text col
 * Use `.u-text-grey-80` to set an element's foreground color to `#474747`.
 * Use `.u-border-red-80` to set an element's border color to `#9E0D0D`.
 
+#### Brand / Primary / Text Colors
 
 <section class="black-white">
     <figure class="swatch">
@@ -60,6 +61,9 @@ Color utility classes allow you to determine the background, border, or text col
         </figcaption>
     </figure>
 </section>
+
+#### Success / Positive Colors
+
 <section class="green">
     <figure class="swatch">
         <div class="swatch__color u-bg-green-10"></div>
@@ -90,6 +94,9 @@ Color utility classes allow you to determine the background, border, or text col
         </figcaption>
     </figure>
 </section>
+
+#### Failed / Negative Colors
+
 <section class="red">
     <figure class="swatch">
         <div class="swatch__color u-bg-red-10"></div>
@@ -120,6 +127,9 @@ Color utility classes allow you to determine the background, border, or text col
         </figcaption>
     </figure>
 </section>
+
+#### Warning Colors
+
 <section class="yellow">
     <figure class="swatch">
         <div class="swatch__color u-bg-yellow-10"></div>
@@ -150,6 +160,9 @@ Color utility classes allow you to determine the background, border, or text col
         </figcaption>
     </figure>
 </section>
+
+#### Secondary Colors
+
 <section class="teal">
     <figure class="swatch">
         <div class="swatch__color u-bg-teal-10"></div>

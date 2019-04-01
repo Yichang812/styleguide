@@ -1,11 +1,11 @@
 import { Elm } from './elm/Main.elm';
 import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
-import 'codemirror/theme/zenburn.css';
+import 'codemirror/theme/eclipse.css';
 import 'codemirror/mode/htmlmixed/htmlmixed';
 import hljs from 'highlight.js/lib/highlight';
 import xml from 'highlight.js/lib/languages/xml';
-import 'highlight.js/styles/zenburn.css';
+import 'highlight.js/styles/github-gist.css';
 import '@zalora/style/dist/style.min.css';
 import './main.css';
 
@@ -59,7 +59,7 @@ customElements.define('code-editor', class extends HTMLElement {
             indentUnit: 4,
             mode: 'htmlmixed',
             lineNumbers: true,
-            theme: 'zenburn',
+            theme: 'eclipse',
             lineWrapping: true,
             value: this._editorValue
         })

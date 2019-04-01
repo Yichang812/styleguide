@@ -180,17 +180,31 @@ loadCurrentPage ( model, cmd ) =
                 Route.Home ->
                     ( HomePage, Cmd.none )
 
-                Route.Articles ->
+                Route.Components ->
                     let
                         ( articleModel, articleCmd ) =
-                            Article.init Nothing
+                            Article.init "components" Nothing
                     in
                     ( ArticlePage articleModel, Cmd.map GotArticleMsg articleCmd )
 
-                Route.Article name ->
+                Route.Component name ->
                     let
                         ( articleModel, articleCmd ) =
-                            Article.init (Just name)
+                            Article.init "components" (Just name)
+                    in
+                    ( ArticlePage articleModel, Cmd.map GotArticleMsg articleCmd )
+
+                Route.Guides ->
+                    let
+                        ( articleModel, articleCmd ) =
+                            Article.init "guides" Nothing
+                    in
+                    ( ArticlePage articleModel, Cmd.map GotArticleMsg articleCmd )
+
+                Route.Guide name ->
+                    let
+                        ( articleModel, articleCmd ) =
+                            Article.init "guides" (Just name)
                     in
                     ( ArticlePage articleModel, Cmd.map GotArticleMsg articleCmd )
 

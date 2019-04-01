@@ -13,8 +13,10 @@ import Url.Parser as Parser exposing ((</>), Parser, map, oneOf, s, string, top)
 
 type Route
     = Home
-    | Articles
-    | Article String
+    | Components
+    | Component String
+    | Guides
+    | Guide String
     | Playground
     | NotFound
 
@@ -23,8 +25,10 @@ parser : Parser (Route -> a) a
 parser =
     oneOf
         [ map Home top
-        , map Articles (s "articles")
-        , map Article (s "articles" </> string)
+        , map Components (s "components")
+        , map Component (s "components" </> string)
+        , map Guides (s "guides")
+        , map Guide (s "guides" </> string)
         , map Playground (s "playground")
         ]
 
@@ -57,11 +61,17 @@ routeToString page =
                 Home ->
                     []
 
-                Articles ->
-                    [ "articles" ]
+                Components ->
+                    [ "components" ]
 
-                Article name ->
-                    [ "articles", name ]
+                Component name ->
+                    [ "components", name ]
+
+                Guides ->
+                    [ "guides" ]
+
+                Guide name ->
+                    [ "guides", name ]
 
                 Playground ->
                     [ "playground" ]

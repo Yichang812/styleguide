@@ -4,6 +4,9 @@ const webpack = require('webpack');
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
+const MODE =
+    process.env.npm_lifecycle_event === "prod" ? "production" : "development";
+
 module.exports = {
     entry: {
         index: [
@@ -12,7 +15,7 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname, 'public'),
-        filename: '[name].js',
+        filename: MODE == "production" ? "[name]-[hash].js" : "index.js",
         publicPath: '/',
     },
     module: {
@@ -38,7 +41,6 @@ module.exports = {
                     {
                         loader: 'elm-webpack-loader',
                         options: {
-                            cwd: __dirname,
                             debug: true
                         }
                     }
@@ -60,6 +62,7 @@ module.exports = {
     devServer: {
         contentBase: path.join(__dirname, '/'),
         hot: true,
+        inline: true,
         port: 9001
     },
 

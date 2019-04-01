@@ -1,4 +1,4 @@
-module Page.Article exposing (Model, Msg, codeSnippet, init, innerCode, update, view)
+module Page.Article exposing (Model, Msg, init, update, view)
 
 import AppState exposing (AppState(..))
 import Browser.Dom as Dom
@@ -6,9 +6,9 @@ import Browser.Navigation as Nav
 import Html exposing (Attribute, Html, a, button, div, input, label, li, main_, text, ul)
 import Html.Attributes exposing (class, classList, for, id, property, style, type_)
 import Html.Events exposing (onClick, onInput)
-import Http exposing (..)
+import Http exposing (Error, expectJson, expectString, get)
 import Json.Decode as Decode exposing (Decoder, list, string)
-import Json.Encode exposing (string)
+import List exposing (head)
 import Markdown exposing (toHtml)
 import Markdown.Block as Block exposing (Block, CodeBlock, defaultHtml)
 import Markdown.Config exposing (HtmlOption(..), Options)
@@ -16,7 +16,7 @@ import Maybe exposing (withDefault)
 import Route exposing (href)
 import String exposing (contains)
 import Url.Builder exposing (absolute)
-import Util exposing (loading, menuIcon)
+import Util exposing (codeSnippet, loading, menuIcon)
 
 
 
@@ -26,6 +26,7 @@ import Util exposing (loading, menuIcon)
 type alias Model =
     { title : Maybe String
     , content : Maybe String
+    , category : String
     , fileList : List String
     , shownFileList : List String
     , appState : AppState Http.Error
@@ -37,8 +38,8 @@ type alias Model =
 -- INIT
 
 
-init : Maybe String -> ( Model, Cmd Msg )
-init maybeTitle =
+init : String -> Maybe String -> ( Model, Cmd Msg )
+init category maybeTitle =
     let
         decoder : Decoder (List String)
         decoder =
@@ -46,14 +47,15 @@ init maybeTitle =
     in
     ( { title = maybeTitle
       , content = Nothing
+      , category = category
       , fileList = []
       , shownFileList = []
       , appState = AppState.init
       , compact = False
       }
     , Http.get
-        { url = "/pages/staticFilesMap.json"
-        , expect = Http.expectJson InitView decoder
+        { url = "/pages/" ++ category ++ "/fileList.json"
+        , expect = expectJson InitView decoder
         }
     )
 
@@ -104,15 +106,15 @@ sideMenu model =
                 ]
             , button [ class "btn btn--outline articleListToggle", onClick ToggleArticleList ] [ Util.menuIcon ]
             ]
-        , List.map (\s -> listItem s (.title model)) (.shownFileList model)
+        , List.map (\s -> listItem (.category model) s (s == withDefault "" (.title model))) (.shownFileList model)
             |> ul [ class "list collapse__target articleList", showList <| .compact model ]
         ]
 
 
-listItem : String -> Maybe String -> Html msg
-listItem fileName activeFile =
-    li [ classList [ ( "list__item--single", True ), ( "u-font-weight-bold", fileName == Maybe.withDefault "" activeFile ) ] ]
-        [ a [ class "u-text-grey-100", Route.href <| Route.Article fileName ] [ text fileName ] ]
+listItem : String -> String -> Bool -> Html msg
+listItem category fileName isActive =
+    li [ classList [ ( "list__item--single", True ), ( "u-font-weight-bold", isActive ) ] ]
+        [ a [ class "u-text-grey-100", Route.href <| getCategoryRoute category fileName ] [ text fileName ] ]
 
 
 article : Maybe String -> Html msg
@@ -130,7 +132,7 @@ article content =
                 Block.CodeBlock codeblock codestr ->
                     [ div [ class "example" ]
                         [ div [ class "example__preview" ] <| Markdown.toHtml (Just options) codestr
-                        , div [ class "example__codeblock" ] [ codeSnippet [ innerCode codestr ] ]
+                        , div [ class "example__codeblock" ] [ Util.codeSnippet codestr ]
                         ]
                     ]
 
@@ -147,17 +149,6 @@ article content =
         |> div [ class "col-sm-4 col-md-6 col-l-10" ]
 
 
-codeSnippet : List (Html.Attribute msg) -> Html msg
-codeSnippet attributes =
-    Html.node "code-snippet" attributes []
-
-
-innerCode : String -> Html.Attribute msg
-innerCode code =
-    Html.Attributes.property "innerCode" <|
-        Json.Encode.string code
-
-
 
 -- UPDATE
 
@@ -172,7 +163,7 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        { appState, fileList, title, compact } =
+        { appState, fileList, title, category, compact } =
             model
     in
     case msg of
@@ -183,15 +174,23 @@ update msg model =
                         cmd =
                             case title of
                                 Nothing ->
-                                    Cmd.none
+                                    case head value of
+                                        Just name ->
+                                            Http.get
+                                                { url = "/pages/" ++ category ++ "/" ++ name ++ ".md"
+                                                , expect = expectString FileLoaded
+                                                }
+
+                                        Nothing ->
+                                            Cmd.none
 
                                 Just fileName ->
                                     Http.get
-                                        { url = "/pages/" ++ fileName ++ ".md"
+                                        { url = "/pages/" ++ category ++ "/" ++ fileName ++ ".md"
                                         , expect = expectString FileLoaded
                                         }
                     in
-                    ( { model | fileList = value, shownFileList = value, appState = AppState.toSuccess appState }, cmd )
+                    ( { model | fileList = value, shownFileList = value, appState = AppState.toSuccess appState, title = head value }, cmd )
 
                 Err error ->
                     ( { model | appState = AppState.toFailure error appState }, Cmd.none )
@@ -224,3 +223,16 @@ showList display =
 
         False ->
             style "height" "0"
+
+
+getCategoryRoute : String -> String -> Route.Route
+getCategoryRoute category name =
+    case category of
+        "components" ->
+            Route.Component name
+
+        "guides" ->
+            Route.Guide name
+
+        _ ->
+            Route.NotFound

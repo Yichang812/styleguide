@@ -37,19 +37,21 @@ init =
 
 view : Model -> Html Msg
 view model =
-    main_ [ class "playground" ]
-        [ h1 [] [ text "Playground" ]
-        , div [ class "playground__wrapper" ]
-            [ div
-                [ id "playground__preview"
-                , class "playground__preview"
-                , attribute "data-html" <| .code model
-                ]
-                []
-            , codeEditor
-                [ class "playground__editor"
-                , editorValue <| .code model
-                , onEditorChanged CodeChanged
+    main_ [ class "container--fluid" ]
+        [ div [ class "playground" ]
+            [ h1 [] [ text "Playground" ]
+            , div [ class "playground__wrapper" ]
+                [ div
+                    [ id "playground__preview"
+                    , class "playground__preview"
+                    , attribute "data-html" <| .code model
+                    ]
+                    []
+                , codeEditor
+                    [ class "playground__editor"
+                    , editorValue <| .code model
+                    , onEditorChanged CodeChanged
+                    ]
                 ]
             ]
         ]

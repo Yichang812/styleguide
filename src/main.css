@@ -1,9 +1,12 @@
 code {
-  display: block;
   background-color: #F4F4F4;
   line-height: 2;
   padding: 0 1rem;
   margin: .5rem 0;
+}
+
+.code--block {
+  display: block;
 }
 
 img {
@@ -73,6 +76,9 @@ main {
   box-sizing: border-box;
   overflow: scroll;
 }
+.CodeMirror-wrap{
+  border: 1px solid #f4f4f4;
+}
 
 .filename:hover {
   cursor: pointer;
@@ -95,7 +101,7 @@ main {
   padding: 15px 15px 0 15px;
 }
 
-/* .swatch {
+.swatch {
   display: inline-block;
   width: 150px;
   box-shadow: 0 10px 20px 0 rgba(4,68,77,.15);
@@ -115,7 +121,7 @@ main {
   line-height: 1.66667;
   font-weight: 600;
   font-size: 12px;
-} */
+}
 
 /* Loading icon for fun */
 
