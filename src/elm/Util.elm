@@ -1,8 +1,9 @@
-module Util exposing (codeSnippet, loading, menuIcon)
+module Util exposing (codeSnippet, loading, menuIcon, pageFooter)
 
-import Html exposing (Html, div)
-import Html.Attributes exposing (class)
+import Html exposing (Html, a, div, footer, text)
+import Html.Attributes exposing (class, href)
 import Json.Encode exposing (string)
+import Route exposing (Route)
 
 
 menuIcon : Html msg
@@ -37,3 +38,17 @@ innerCode : String -> Html.Attribute msg
 innerCode code =
     Html.Attributes.property "innerCode" <|
         Json.Encode.string code
+
+
+pageFooter : Html msg
+pageFooter =
+    footer [ class "footer u-bg-grey-100 u-text-white" ]
+        [ div [ class "row" ]
+            [ div [ class "col" ] [ a [ class "u-text-white", href "https://github.com/zalora/style" ] [ text "Github" ] ]
+            , div [ class "col" ] [ a [ class "u-text-white", href "https://www.zalora.com" ] [ text "ZALORA" ] ]
+            , div [ class "col" ] [ a [ class "u-text-white", Route.href <| Route.Component "color" ] [ text "Color" ] ]
+            , div [ class "col" ] [ a [ class "u-text-white", Route.href <| Route.Guides ] [ text "Design Priciple" ] ]
+            ]
+        , div [ class "row u-margin-top-l" ]
+            [ div [ class "col u-text-micro" ] [ text "Currently v1.4.0. Released under the Apache License 2.0" ] ]
+        ]

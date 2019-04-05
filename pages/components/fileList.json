@@ -1,9 +1,10 @@
 [
+  "Color.md",
+  "Typography.md",
   "Badge.md",
   "Banner.md",
   "Button.md",
   "Collapse.md",
-  "Color.md",
   "Divider.md",
   "Form.md",
   "Grid.md",
@@ -13,6 +14,5 @@
   "Popup.md",
   "Tabs.md",
   "Toastr.md",
-  "Tooltip.md",
-  "Typography.md"
+  "Tooltip.md"
 ]

@@ -14,7 +14,7 @@ import Markdown.Block as Block exposing (Block, CodeBlock, defaultHtml)
 import Markdown.Config exposing (HtmlOption(..), Options)
 import Maybe exposing (withDefault)
 import Route exposing (href)
-import String exposing (contains)
+import String exposing (contains, isEmpty, toLower)
 import Url.Builder exposing (absolute)
 import Util exposing (codeSnippet, loading, menuIcon)
 
@@ -31,6 +31,7 @@ type alias Model =
     , shownFileList : List String
     , appState : AppState Http.Error
     , compact : Bool
+    , searchValue : String
     }
 
 
@@ -52,6 +53,7 @@ init category maybeTitle =
       , shownFileList = []
       , appState = AppState.init
       , compact = False
+      , searchValue = ""
       }
     , Http.get
         { url = "/pages/" ++ category ++ "/fileList.json"
@@ -101,7 +103,7 @@ sideMenu model =
     div [ class "col-sm-4 col-md-2 col-l-2 sideMenu" ]
         [ div [ class "row justify-content-between" ]
             [ div [ class "textField col" ]
-                [ input [ id "searchArticle", type_ "text", onInput SearchArticle ] []
+                [ input [ id "searchArticle", classList [ ( "has-value", not (isEmpty <| .searchValue model) ) ], type_ "text", onInput SearchArticle ] []
                 , label [ for "searchArticle" ] [ text "Search ..." ]
                 ]
             , button [ class "btn btn--outline articleListToggle", onClick ToggleArticleList ] [ Util.menuIcon ]
@@ -171,26 +173,30 @@ update msg model =
             case data of
                 Ok value ->
                     let
-                        cmd =
+                        ( currentTitle, cmd ) =
                             case title of
                                 Nothing ->
                                     case head value of
                                         Just name ->
-                                            Http.get
+                                            ( Just name
+                                            , Http.get
                                                 { url = "/pages/" ++ category ++ "/" ++ name ++ ".md"
                                                 , expect = expectString FileLoaded
                                                 }
+                                            )
 
                                         Nothing ->
-                                            Cmd.none
+                                            ( Nothing, Cmd.none )
 
                                 Just fileName ->
-                                    Http.get
+                                    ( Just fileName
+                                    , Http.get
                                         { url = "/pages/" ++ category ++ "/" ++ fileName ++ ".md"
                                         , expect = expectString FileLoaded
                                         }
+                                    )
                     in
-                    ( { model | fileList = value, shownFileList = value, appState = AppState.toSuccess appState, title = head value }, cmd )
+                    ( { model | fileList = value, shownFileList = value, appState = AppState.toSuccess appState, title = currentTitle }, cmd )
 
                 Err error ->
                     ( { model | appState = AppState.toFailure error appState }, Cmd.none )
@@ -198,13 +204,13 @@ update msg model =
         FileLoaded data ->
             case data of
                 Ok file ->
-                    ( { model | content = Just file, appState = AppState.toSuccess appState }, Cmd.none )
+                    ( { model | content = Just file, title = title, appState = AppState.toSuccess appState }, Cmd.none )
 
                 Err error ->
                     ( { model | content = Just "Fail to load content", appState = AppState.toFailure error appState }, Cmd.none )
 
         SearchArticle input ->
-            ( { model | shownFileList = fileFilter input fileList }, Cmd.none )
+            ( { model | shownFileList = fileFilter input fileList, searchValue = input }, Cmd.none )
 
         ToggleArticleList ->
             ( { model | compact = not compact }, Cmd.none )
@@ -212,7 +218,7 @@ update msg model =
 
 fileFilter : String -> List String -> List String
 fileFilter input fileList =
-    List.filter (\file -> contains input file) fileList
+    List.filter (\file -> contains (toLower input) (toLower file)) fileList
 
 
 showList : Bool -> Attribute msg

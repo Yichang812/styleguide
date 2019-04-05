@@ -12,6 +12,7 @@ import Page.Playground as Playground exposing (Msg, init, update, view)
 import Route exposing (Route, fromUrl)
 import Url exposing (Url)
 import Url.Builder exposing (absolute)
+import Util exposing (pageFooter)
 
 
 
@@ -44,27 +45,27 @@ view model =
             case .page model of
                 HomePage ->
                     { title = "Home"
-                    , view = Home.view
+                    , view = Home.view :: [ Util.pageFooter ]
                     }
 
                 ArticlePage article ->
                     { title = withDefault "Documentation" (.title article)
-                    , view = Html.map GotArticleMsg (Article.view article)
+                    , view = [ Html.map GotArticleMsg (Article.view article) ]
                     }
 
                 PlaygroundPage playground ->
                     { title = "Playground"
-                    , view = Html.map GotPlaygroundMsg (Playground.view playground)
+                    , view = [ Html.map GotPlaygroundMsg (Playground.view playground) ]
                     }
 
                 NotFoundPage ->
                     { title = "Not Found"
-                    , view = NotFound.view
+                    , view = NotFound.view :: [ Util.pageFooter ]
                     }
 
                 EmptyPage ->
                     { title = ""
-                    , view = text ""
+                    , view = [ text "" ]
                     }
     in
     Page.pageView pageInfo

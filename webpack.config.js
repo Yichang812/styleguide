@@ -3,19 +3,19 @@
 const webpack = require('webpack');
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
-const MODE =
-    process.env.npm_lifecycle_event === "prod" ? "production" : "development";
-
-module.exports = {
+module.exports = (env, argv) => [{
     entry: {
         index: [
             './src/index.js'
         ]
     },
     output: {
-        path: path.resolve(__dirname, 'public'),
-        filename: MODE == "production" ? "[name]-[hash].js" : "index.js",
+        filename:  argv.mode === "production" ? "[name].[hash].js" : "index.js",
         publicPath: '/',
     },
     module: {
@@ -53,11 +53,25 @@ module.exports = {
         ]
     },
     plugins: [
+        new HtmlWebpackPlugin(
+            {
+                title: "Style",
+                favicon: "./assets/favicon.ico",
+                meta: {viewport: 'width=device-width, initial-scale=1, shrink-to-fit=no'},
+            }
+        ),
         new MiniCssExtractPlugin({
-            filename: '[name].css',
+            filename: argv.mode === "production" ? "[name].[contenthash].css" : "index.css",
             chunkFilename: '[id].css'
         }),
         new webpack.HotModuleReplacementPlugin(),
+        new CopyPlugin([
+            { from: 'pages', to: 'pages' },
+            { from: 'img', to: 'img' },
+            { from: 'assets', to: 'assets'},
+            { from: './index.html'},
+            { from: './error.html'}
+          ]),
     ],
     devServer: {
         contentBase: path.join(__dirname, '/'),
@@ -65,6 +79,20 @@ module.exports = {
         inline: true,
         port: 9001
     },
+    optimization: {
+        minimizer: [
+            new TerserPlugin({
+                test: /\.js(\?.*)?$/i,
+                exclude: /node_modules/,
+            }), 
+            new OptimizeCssAssetsPlugin({
+                cssProcessor: require('cssnano'),
+                cssProcessorPluginOptions: {
+                preset: ['default', { discardComments: { removeAll: true } }],
+            },
+            })
+        ]
+      },
 
 
-};
+}];
